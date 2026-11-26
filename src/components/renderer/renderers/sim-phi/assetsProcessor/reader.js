@@ -129,6 +129,7 @@ export async function readFile(
     }
 ) {
     const { name, path } = splitPath(i.name);
+    const filename = normalizePath(i.name);
     if (name === "line.csv") {
         const data = await stringify(i.buffer);
         const chartLine = joinPathInfo(csv2array(data, true), path);
@@ -160,25 +161,25 @@ export async function readFile(
                 audio: await createAudioBuffer(i.buffer.slice()),
                 video: width && height ? videoElement : null,
             };
-            return { type: "media", name: i.name, data, buffer: i.buffer };
+            return { type: "media", name: filename, data, buffer: i.buffer };
         })
         .catch(async () => {
             const data = {
                 audio: await createAudioBuffer(i.buffer.slice()),
                 video: null,
             };
-            return { type: "media", name: i.name, data, buffer: i.buffer };
+            return { type: "media", name: filename, data, buffer: i.buffer };
         })
         .catch(async () => {
             const data = new Blob([i.buffer]);
             const imageData = await createImageBitmap(data);
-            return { type: "image", name: i.name, data: imageData, buffer: i.buffer };
+            return { type: "image", name: filename, data: imageData, buffer: i.buffer };
         })
         .catch(async () => {
             const webp2canvas = Object.getOwnPropertyDescriptor(self, "webp").value.default;
             const img = await webp2canvas(i.buffer);
             const bitmap = await createImageBitmap(img);
-            return { type: "image", name: i.name, data: bitmap };
+            return { type: "image", name: filename, data: bitmap };
         })
         .catch(async () => {
             const data = await stringify(i.buffer);
@@ -186,26 +187,14 @@ export async function readFile(
                 const parsedJSON = JSON.parse(data);
                 try {
                     if (parsedJSON.META) {
-                        const rpeData = chartConverter.parseRPE(data, i.name, path); //qwq
-                        const jsonData = await chart123(rpeData.data);
-                        const { messages: msg, info, line } = rpeData;
-                        return {
-                            type: "chart",
-                            name: i.name,
-                            md5: md5(data),
-                            data: jsonData,
-                            msg,
-                            info,
-                            line,
-                            buffer: i.buffer,
-                        };
+                        return readRPE(data, filename, i.buffer);
                     } else {
                         const jsonData = await chart123(data, (_, value) =>
                             typeof value === "number" ? Math.fround(value) : value
                         );
                         return {
                             type: "chart",
-                            name: i.name,
+                            name: filename,
                             md5: md5(data),
                             data: jsonData,
                             buffer: i.buffer,
@@ -221,37 +210,23 @@ export async function readFile(
                             );
                             return {
                                 type: "chart",
-                                name: i.name,
+                                name: filename,
                                 md5: md5(data),
                                 data: jsonData,
                                 buffer: i.buffer,
                             };
                         })
-                        .catch(async () => {
-                            const rpeData = chartConverter.parseRPE(data, i.name, path); //qwq
-                            const jsonData = await chart123(rpeData.data);
-                            const { messages: msg, info, line } = rpeData;
-                            return {
-                                type: "chart",
-                                name: i.name,
-                                md5: md5(data),
-                                data: jsonData,
-                                msg,
-                                info,
-                                line,
-                                buffer: i.buffer,
-                            };
-                        });
+                        .catch(() => readRPE(data, filename, i.buffer));
                 }
             } catch (e) {
                 return new Promise(() => {
                     throw new Error("Just make it a promise");
                 }).catch(async () => {
-                    const pecData = chartConverter.parse(data, i.name);
+                    const pecData = chartConverter.parse(data, filename);
                     const jsonData = await chart123(pecData.data);
                     return {
                         type: "chart",
-                        name: i.name,
+                        name: filename,
                         md5: md5(data),
                         data: jsonData,
                         msg: pecData.messages,
@@ -263,6 +238,24 @@ export async function readFile(
         .catch(error => ({ type: "error", name: i.name, data: error }));
 }
 
+function readRPE(text, filename, buffer) {
+    const { data, messages: msg, info, line } = chartConverter.parseRPE(text, filename);
+    return {
+        type: "chart",
+        name: filename,
+        md5: md5(text),
+        data: chart123(data),
+        msg,
+        info: joinPathInfo([info])[0],
+        line: joinPathInfo(line),
+        buffer,
+    };
+}
+
+function normalizePath(path) {
+    return path.replace(/\\/g, "/");
+}
+
 function splitPath(i) {
     // 兼容 Windows 的 \ 和 Linux/Mac 的 /
     const j = Math.max(i.lastIndexOf("/"), i.lastIndexOf("\\"));
@@ -271,12 +264,12 @@ function splitPath(i) {
     return { name, path };
 }
 
-function joinPathInfo(info, path) {
-    if (!path) return info;
+function joinPathInfo(info, path = "") {
+    const prefix = path ? `${normalizePath(path)}/` : "";
     for (const i of info) {
-        if (i.Chart) i.Chart = `${path}/${i.Chart}`;
-        if (i.Music) i.Music = `${path}/${i.Music}`;
-        if (i.Image) i.Image = `${path}/${i.Image}`;
+        if (typeof i.Chart === "string" && i.Chart) i.Chart = prefix + normalizePath(i.Chart);
+        if (typeof i.Music === "string" && i.Music) i.Music = prefix + normalizePath(i.Music);
+        if (typeof i.Image === "string" && i.Image) i.Image = prefix + normalizePath(i.Image);
     }
     return info;
 }

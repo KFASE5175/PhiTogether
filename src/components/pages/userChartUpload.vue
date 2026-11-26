@@ -69,7 +69,7 @@
                 $id("extraResource").value = "";
                 this.extraResource = null;
             },
-            async userChartUploaded() {
+            async userChartUploaded(importedInfo = {}) {
                 $id("add_library").classList.remove("disabled");
                 const selectbg = $id("select-bg");
                 const selectbgm = $id("select-bgm");
@@ -102,12 +102,18 @@
                         "error"
                     );
 
-                inputName.value = this.$route.query.name || inputName.value;
-                inputArtist.value = this.$route.query.composer || inputArtist.value;
-                inputCharter.value = this.$route.query.charter || inputCharter.value;
-                inputIllustrator.value = this.$route.query.illustrator || inputIllustrator.value;
-                selectDifficulty.value = this.$route.query.level || selectDifficulty.value;
-                selectLevel.value = this.$route.query.difficulty || selectLevel.value; // 定数
+                const { query } = this.$route;
+                inputName.value = query.name || inputName.value || importedInfo.name || "";
+                inputArtist.value =
+                    query.composer || inputArtist.value || importedInfo.composer || "";
+                inputCharter.value =
+                    query.charter || inputCharter.value || importedInfo.charter || "";
+                inputIllustrator.value =
+                    query.illustrator || inputIllustrator.value || importedInfo.illustrator || "";
+                selectDifficulty.value =
+                    query.level || selectDifficulty.value || importedInfo.level || "";
+                selectLevel.value =
+                    query.difficulty || selectLevel.value || importedInfo.difficulty || "";
 
                 // if (
                 //     !inputName.value ||

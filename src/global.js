@@ -1232,10 +1232,10 @@ const ptAppInstance = createApp({
         },
         chartLoadedCB() {
             if (this.$route.path === "/chartUpload") {
-                shared.game.adjustInfo();
+                const importedInfo = shared.game.adjustInfo();
                 $("uploader").classList.remove("disabled");
                 ploading.r("loadChart");
-                shared.game.userChartUploaded();
+                shared.game.userChartUploaded(importedInfo);
                 this.lastLoad = hook.chartData.chartsMD5.get(hook.selectchart.value);
                 return;
             }

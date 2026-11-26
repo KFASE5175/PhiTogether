@@ -100,7 +100,7 @@ async function downloadSong(
         id: parseCustomServerChartId(songInfo.id),
         name: songInfo.name,
         composer: songInfo.composer,
-        illustrator: songInfo.composer,
+        illustrator: songInfo.illustrator ?? songInfo.composer,
         from: songInfo.isFromPhiZone
             ? ChartSource.PhiZone
             : songInfo.isFromURL
