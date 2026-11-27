@@ -140,7 +140,7 @@ export async function readFile(
         const chartInfo = joinPathInfo(csv2array(data, true), path);
         return { type: "info", data: chartInfo, buffer: i.buffer };
     }
-    if (name === "Settings.txt" || name === "info.txt") {
+    if (name.toLowerCase() === "settings.txt" || name.toLowerCase() === "info.txt") {
         const data = await stringify(i.buffer);
         const chartInfo = joinPathInfo(chartConverter.info(data), path);
         return { type: "info", data: chartInfo, buffer: i.buffer };
